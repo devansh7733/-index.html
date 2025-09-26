@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Harry Potter Wand Experience</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{overflow:hidden;height:100vh;font-family:Segoe UI, sans-serif}
+
+  .scene{position:absolute;width:100%;height:100%;display:flex;
+    justify-content:center;align-items:center;}
+
+  #scene1{
+    background:linear-gradient(135deg,#ffc0cb,#ff9dc9,#ff7fb5);
+    z-index:5;overflow:hidden
+  }
+
+  /* Gate */
+  .gate{
+    width:250px;height:400px;
+    background:linear-gradient(to right,#8B4513,#6B3100);
+    border:8px solid #5D2900;border-radius:10px;
+    position:relative;box-shadow:0 0 25px rgba(0,0,0,.7);
+    transition:transform 2s ease;z-index:6;
+  }
+  .gate-handle{
+    position:absolute;right:20%;top:50%;
+    width:25px;height:70px;
+    background:linear-gradient(to bottom,#C0C0C0,#808080);
+    border-radius:12px;transform:translateY(-50%);
+    z-index:7;
+  }
+
+  /* Wand - new stylish appearance */
+  .wand{
+    position:absolute;width:10px;height:130px;border-radius:6px;
+    background:linear-gradient(to bottom,#3b2f2f,#6e4b1f,#d4a373);
+    border:2px solid #222;
+    z-index:10;cursor:grab;pointer-events:auto;
+  }
+  .wand::after{
+    content:"";position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+    width:18px;height:18px;background:#00BFFF;border-radius:50%;
+    box-shadow:0 0 15px #1E90FF,0 0 30px #00BFFF,0 0 45px #00BFFF;
+  }
+
+  /* Particles */
+  .particle{
+    position:absolute;width:6px;height:6px;background:#1E90FF;border-radius:50%;
+    pointer-events:none;opacity:1;
+    animation:fly 900ms linear forwards;
+    box-shadow:0 0 10px #1E90FF,0 0 20px #00BFFF;z-index:5;
+  }
+  @keyframes fly{to{transform:translateY(-80px) scale(0.25);opacity:0}}
+
+  /* Floating bg particles */
+  .bg-particle{
+    position:absolute;width:8px;height:8px;background:rgba(255,255,255,0.75);
+    border-radius:50%;pointer-events:none;animation:floatUp 7s linear infinite;z-index:2;
+  }
+  @keyframes floatUp{
+    0%{transform:translateY(90vh) scale(0.6);opacity:0;}
+    20%{opacity:1;}100%{transform:translateY(-10vh) scale(1);opacity:0;}
+  }
+
+  .spell-text{
+    position:absolute;bottom:50px;left:50%;transform:translateX(-50%);
+    color:#1E90FF;font-size:2rem;font-weight:bold;text-shadow:0 0 10px #00BFFF;
+    opacity:0;transition:opacity .5s;z-index:12
+  }
+
+  /* Scene2 */
+  #scene2{
+    display:none;
+    background:#000;
+    z-index:4;overflow:hidden;color:white;
+  }
+  #darkRoom{
+    width:80%;height:70%;background:#000;
+    box-shadow:0 0 50px rgba(255,255,255,0.2) inset;
+    border-radius:20px;transition:background 1s, box-shadow 1s;
+  }
+  #darkRoom.lit{
+    background:#ddd;
+    box-shadow:0 0 100px rgba(255,255,200,0.9) inset,0 0 60px rgba(255,255,150,0.7);
+  }
+  #lumos-text{
+    color:#FFD700;text-shadow:0 0 20px #ffff66,0 0 40px #ffff99;
+  }
+
+  /* Blast effect */
+  @keyframes lightBlast {
+    0% { background:#000; box-shadow:none; }
+    50% { background:#fff; box-shadow:0 0 200px 100px #fff; }
+    100% { background:#ddd; box-shadow:0 0 100px rgba(255,255,200,0.9) inset,0 0 60px rgba(255,255,150,0.7); }
+  }
+
+  /* Scene3 */
+  #scene3{
+    display:none;flex-direction:column;justify-content:center;align-items:center;
+    background:#fff;text-align:center;padding:20px;
+  }
+  #messageBoard{font-size:2rem;margin:20px;display:none;border:2px solid #000;padding:10px}
+  #balloon{font-size:4rem;display:none;cursor:pointer;transition:transform 5s ease}
+  #balloon small{display:block;font-size:14px;margin-top:-10px}
+</style>
+</head>
+<body>
+  <!-- Scene1 -->
+  <div class="scene" id="scene1">
+    <div class="gate" id="gate"><div class="gate-handle"></div></div>
+    <div class="wand" id="wand"></div>
+    <div class="spell-text" id="alohomora-text">Alohomora!!!</div>
+  </div>
+
+  <!-- Scene2 -->
+  <div class="scene" id="scene2">
+    <div id="darkRoom"></div>
+    <div class="wand" id="wand2"></div>
+    <div class="spell-text" id="lumos-text">Lumos!!!</div>
+  </div>
+
+  <!-- Scene3 -->
+  <div class="scene" id="scene3">
+    <div id="messageBoard">YOU ARE A WITCH NOW!!</div>
+    <div id="balloon">🎈<small>Click</small></div>
+  </div>
+
+<script>
+/* Common Wand / Particles */
+function createParticle(x,y){
+  const p=document.createElement("div");
+  p.className="particle";p.style.left=(x-3)+"px";p.style.top=(y-3)+"px";
+  document.body.appendChild(p);setTimeout(()=>p.remove(),1000);
+}
+function getPointer(e){return e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY};}
+
+/* Scene1 */
+const scene1=document.getElementById("scene1");
+const gate=document.getElementById("gate");
+const wand=document.getElementById("wand");
+const alohomoraText=document.getElementById("alohomora-text");
+
+let drawing=false;let points=[];
+
+/* Background particles scene1 */
+function spawnBackgroundParticles(){
+  for(let i=0;i<20;i++){
+    const p=document.createElement("div");
+    p.className="bg-particle";
+    p.style.left=Math.random()*100+"%";
+    p.style.top=(80+Math.random()*20)+"%";
+    p.style.animationDuration=(6+Math.random()*6)+"s";
+    scene1.appendChild(p);
+    setTimeout(()=>p.remove(),12000);
+  }
+}
+spawnBackgroundParticles();setInterval(spawnBackgroundParticles,2000);
+
+function moveWand(e){
+  const p=getPointer(e);
+  wand.style.left=(p.x-wand.offsetWidth/2)+"px";
+  wand.style.top=(p.y-wand.offsetHeight/2)+"px";
+  createParticle(p.x,p.y-wand.offsetHeight/2);
+  points.push({x:p.x,y:p.y});
+}
+function startDraw(e){drawing=true;points=[];moveWand(e);}
+function stopDraw(){
+  drawing=false;
+  if(checkCircle(points)){triggerAlohomora();}
+}
+function checkCircle(pts){
+  if(pts.length<20)return false;
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  const minX=Math.min(...xs),maxX=Math.max(...xs);
+  const minY=Math.min(...ys),maxY=Math.max(...ys);
+  const w=maxX-minX,h=maxY-minY;
+  if(w<80||h<80)return false;
+  return true;
+}
+function triggerAlohomora(){
+  alohomoraText.style.opacity=1;
+  setTimeout(()=>{
+    gate.style.transform="rotateY(75deg)";
+    setTimeout(()=>{
+      scene1.style.display="none";   
+      document.getElementById("scene2").style.display="flex";  
+      startScene2();
+    },2000);
+  },600);
+}
+wand.addEventListener("pointerdown",startDraw);
+window.addEventListener("pointermove",(e)=>{if(drawing)moveWand(e);});
+window.addEventListener("pointerup",()=>{if(drawing)stopDraw();});
+
+/* Scene2 */
+const scene2=document.getElementById("scene2");
+const wand2=document.getElementById("wand2");
+const darkRoom=document.getElementById("darkRoom");
+const lumosText=document.getElementById("lumos-text");
+
+let drawing2=false;let linePoints=[];
+
+function moveWand2(e){
+  const p=getPointer(e);
+  wand2.style.left=(p.x-wand2.offsetWidth/2)+"px";
+  wand2.style.top=(p.y-wand2.offsetHeight/2)+"px";
+  createParticle(p.x,p.y-wand2.offsetHeight/2);
+  linePoints.push({x:p.x,y:p.y});
+}
+function startDraw2(e){drawing2=true;linePoints=[];moveWand2(e);}
+function stopDraw2(){
+  drawing2=false;
+  if(checkLine(linePoints)){triggerLumos();}
+}
+function checkLine(pts){
+  if(pts.length<8) return false;
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  const w=Math.max(...xs)-Math.min(...xs);
+  const h=Math.max(...ys)-Math.min(...ys);
+  return (h > 80 && w < 120);
+}
+function triggerLumos(){
+  darkRoom.style.animation="lightBlast 1.2s ease forwards";
+  lumosText.style.opacity=1;
+  setTimeout(()=>{
+    scene2.style.display="none";
+    scene3.style.display="flex";
+    startScene3();
+  },2000);
+}
+function startScene2(){
+  wand2.addEventListener("pointerdown",startDraw2);
+  window.addEventListener("pointermove",(e)=>{if(drawing2)moveWand2(e);});
+  window.addEventListener("pointerup",()=>{if(drawing2)stopDraw2();});
+}
+
+/* Scene3 sequence */
+const scene3=document.getElementById("scene3");
+const messageBoard=document.getElementById("messageBoard");
+const balloon=document.getElementById("balloon");
+
+function startScene3(){
+  messageBoard.style.display="block";
+  setTimeout(()=>{
+    balloon.style.display="block";
+    // Balloon rises just enough to cover message (not full screen)
+    balloon.style.transform="translateY(-150px)";
+  },3000);
+
+  balloon.addEventListener("click",()=>{
+    balloon.style.display="none";
+    messageBoard.textContent="THE MOST BEAUTIFUL WITCH I HAVE EVER SEEN!!!";
+    const byLine=document.createElement("div");
+    byLine.textContent="- BY DEV TO MY LOVE";
+    byLine.style.fontSize="1.2rem";
+    messageBoard.appendChild(byLine);
+    setTimeout(()=>{
+      messageBoard.textContent="I LOVE U SOOOOOO MUCH MY CUTIE MERI CHHOTU SI BILLII";
+    },5000);
+  });
+}
+</script>
+</body>
+</html>
